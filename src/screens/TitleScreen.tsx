@@ -1,13 +1,24 @@
+import { useState } from 'react'
 import type { AudioApi } from '../audio/useAudio'
 import { MuteButton } from '../components/MuteButton'
 import { Sky } from '../components/Sky'
+import { saveName } from '../game/progress'
 
 type Props = {
   audio: AudioApi
-  onPlay: () => void
+  name: string
+  onPlay: (name: string) => void
 }
 
-export function TitleScreen({ audio, onPlay }: Props) {
+export function TitleScreen({ audio, name, onPlay }: Props) {
+  const [value, setValue] = useState(name)
+
+  function handlePlay() {
+    const clean = value.trim()
+    saveName(clean)
+    onPlay(clean)
+  }
+
   return (
     <div className="sky-bg relative flex h-full flex-col items-center justify-center overflow-hidden px-6">
       <Sky />
@@ -26,10 +37,25 @@ export function TitleScreen({ audio, onPlay }: Props) {
       <p className="mt-3 max-w-lg text-center text-2xl font-semibold text-ink/90">
         Mira la foto y arma la frase
       </p>
+      <label className="mt-6 flex flex-col items-center gap-2">
+        <span className="text-2xl font-bold text-ink">¿Cómo te llamas?</span>
+        <input
+          type="text"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') handlePlay()
+          }}
+          maxLength={16}
+          placeholder="Tu nombre"
+          autoComplete="off"
+          className="min-h-14 w-72 rounded-full border-4 border-ink bg-white px-6 text-center text-2xl font-bold text-ink shadow-[0_4px_0_#2a1848] placeholder:text-ink/40 focus:outline-none"
+        />
+      </label>
       <button
         type="button"
-        onClick={onPlay}
-        className="mt-8 min-h-16 rounded-full border-4 border-ink bg-sun px-12 text-3xl font-bold text-ink shadow-[0_6px_0_#2a1848] hover:translate-y-0.5"
+        onClick={handlePlay}
+        className="mt-6 min-h-16 rounded-full border-4 border-ink bg-sun px-12 text-3xl font-bold text-ink shadow-[0_6px_0_#2a1848] hover:translate-y-0.5"
       >
         Jugar
       </button>

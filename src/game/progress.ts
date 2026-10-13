@@ -2,6 +2,23 @@ import { EXERCISES, exercisesByPlace } from '../data/exercises'
 import type { PlaceId } from '../data/types'
 
 const KEY = 'frases-en-accion-v1'
+const NAME_KEY = 'frases-en-accion-name'
+
+export function loadName(): string {
+  try {
+    return localStorage.getItem(NAME_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+export function saveName(name: string) {
+  try {
+    localStorage.setItem(NAME_KEY, name.trim())
+  } catch {
+    // ignore storage errors
+  }
+}
 
 export type Stats = {
   correct: number

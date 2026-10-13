@@ -14,45 +14,96 @@ import { useGame } from '../game/useGame'
 type Props = {
   placeId: PlaceId
   audio: AudioApi
+  name: string
   onBack: () => void
   onPlaceDone: () => void
 }
 
-export function PlayScreen({ placeId, audio, onBack, onPlaceDone }: Props) {
+export function PlayScreen({ placeId, audio, name, onBack, onPlaceDone }: Props) {
   const game = useGame(placeId)
   const place = PLACES.find((item) => item.id === placeId)
   const done = completedInPlace(placeId)
   const total = totalInPlace(placeId)
 
+  const cleanName = name.trim()
+
   const mascotLine = useMemo(() => {
     if (!game.exercise) return '¡Ya terminaste este lugar!'
-    if (game.feedback === 'right') return `¡Muy bien! ${game.exercise.correct.join(' ')}.`
+    if (game.feedback === 'right') {
+      const praise = cleanName ? `¡Muy bien, ${cleanName}!` : '¡Muy bien!'
+      return `${praise} ${game.exercise.correct.join(' ')}.`
+    }
     if (game.feedback === 'wrong') return 'Casi. Mira la tacha. Las que sí van se quedan.'
     if (game.hintLevel >= 1) return game.hintQuestion
     if (game.slots.some(Boolean)) return 'Esas sí van. Completa las que faltan.'
     return 'Mira la foto y elige las palabras.'
-  }, [game.exercise, game.feedback, game.hintLevel, game.hintQuestion, game.slots])
+  }, [cleanName, game.exercise, game.feedback, game.hintLevel, game.hintQuestion, game.slots])
 
   const mascotMood =
     game.feedback === 'right' ? 'happy' : game.feedback === 'wrong' ? 'oops' : game.hintLevel ? 'hint' : 'idle'
 
   useEffect(() => {
     if (game.feedback !== 'right' || !game.exercise) return
-    audio.playSuccess()
-    audio.speak(game.exercise.correct.join(' '))
+    audio.playCelebration()
+    const phrase = game.exercise.correct.join(' ')
+    audio.speak(cleanName ? `¡Bravo ${cleanName}! ${phrase}` : `¡Bravo! ${phrase}`)
+
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (!reduce) {
+    if (reduce) return
+
+    const colors = ['#ff6b57', '#ffd56a', '#63c070', '#7b9cff', '#ff8ad8', '#ffffff']
+    // Estallido inicial grande desde el centro
+    void confetti({
+      particleCount: 160,
+      spread: 100,
+      startVelocity: 55,
+      scalar: 1.3,
+      origin: { y: 0.5 },
+      colors,
+    })
+    // Estrellas que saltan
+    void confetti({
+      particleCount: 50,
+      spread: 120,
+      startVelocity: 45,
+      scalar: 1.6,
+      shapes: ['star'],
+      origin: { y: 0.4 },
+      colors: ['#ffd56a', '#ffffff', '#ff8ad8'],
+    })
+
+    // Lluvia continua desde los lados durante ~2.5 s
+    const end = Date.now() + 2500
+    const interval = window.setInterval(() => {
+      if (Date.now() > end) {
+        window.clearInterval(interval)
+        return
+      }
       void confetti({
-        particleCount: 90,
+        particleCount: 40,
+        angle: 60,
         spread: 70,
-        origin: { y: 0.45 },
-        colors: ['#ff6b57', '#ffd56a', '#63c070', '#7b9cff'],
+        startVelocity: 60,
+        scalar: 1.2,
+        origin: { x: 0, y: 0.7 },
+        colors,
       })
-    }
+      void confetti({
+        particleCount: 40,
+        angle: 120,
+        spread: 70,
+        startVelocity: 60,
+        scalar: 1.2,
+        origin: { x: 1, y: 0.7 },
+        colors,
+      })
+    }, 250)
+
     return () => {
+      window.clearInterval(interval)
       confetti.reset()
     }
-  }, [audio, game.exercise, game.feedback])
+  }, [audio, cleanName, game.exercise, game.feedback])
 
   if (!game.exercise) {
     return (
@@ -81,6 +132,25 @@ export function PlayScreen({ placeId, audio, onBack, onPlaceDone }: Props) {
   return (
     <div className="sky-bg relative flex h-full flex-col overflow-auto px-4 py-3">
       <Sky />
+      {game.feedback === 'right' && (
+        <div className="pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center gap-4">
+          <div className="celebrate-pop flex items-center gap-3 text-7xl md:text-8xl">
+            <span className="star-jump">🎉</span>
+            <span className="star-jump" style={{ animationDelay: '0.15s' }}>
+              ⭐
+            </span>
+            <span className="star-jump" style={{ animationDelay: '0.3s' }}>
+              🎊
+            </span>
+            <span className="star-jump" style={{ animationDelay: '0.45s' }}>
+              🌟
+            </span>
+          </div>
+          <p className="celebrate-pop rounded-[2rem] border-4 border-ink bg-sun px-8 py-3 text-5xl font-bold text-ink shadow-[0_8px_0_#2a1848] md:text-7xl">
+            {cleanName ? `¡BRAVO, ${cleanName.toUpperCase()}!` : '¡BRAVO!'}
+          </p>
+        </div>
+      )}
       <header className="relative z-10 mb-3 flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"

@@ -91,6 +91,39 @@ export function useAudio() {
     tone(ctx, 784, now + 0.24, 0.28, 'triangle', 0.1)
   }, [getCtx, muted])
 
+  const playCelebration = useCallback(async () => {
+    if (muted) return
+    const ctx = await getCtx()
+    stopMusic()
+    const now = ctx.currentTime
+
+    // Arpegio ascendente alegre (do-mi-sol-do-mi-sol agudos)
+    const arpeggio = [523, 659, 784, 1047, 1319, 1568]
+    arpeggio.forEach((freq, i) => {
+      const start = now + i * 0.1
+      tone(ctx, freq, start, 0.18, 'triangle', 0.09)
+      tone(ctx, freq / 2, start, 0.18, 'sine', 0.03)
+    })
+
+    // Acorde final sostenido (do mayor)
+    const chordAt = now + arpeggio.length * 0.1 + 0.05
+    tone(ctx, 523, chordAt, 0.7, 'triangle', 0.08)
+    tone(ctx, 659, chordAt, 0.7, 'triangle', 0.07)
+    tone(ctx, 784, chordAt, 0.7, 'triangle', 0.07)
+    tone(ctx, 1047, chordAt, 0.7, 'sine', 0.06)
+
+    // Brillos agudos encadenados
+    const sparkles = [1760, 2093, 1760, 2349, 2093, 2637]
+    sparkles.forEach((freq, i) => {
+      tone(ctx, freq, chordAt + 0.15 + i * 0.09, 0.1, 'sine', 0.05)
+    })
+
+    // Reanudar la música de fondo cuando termina la fanfarria
+    window.setTimeout(() => {
+      if (!muted && started.current) void playMusic()
+    }, 2200)
+  }, [getCtx, muted, playMusic, stopMusic])
+
   const playError = useCallback(async () => {
     if (muted) return
     const ctx = await getCtx()
@@ -148,8 +181,17 @@ export function useAudio() {
   }, [stopMusic])
 
   return useMemo(
-    () => ({ muted, toggleMute, unlock, playClick, playSuccess, playError, speak }),
-    [muted, toggleMute, unlock, playClick, playSuccess, playError, speak],
+    () => ({
+      muted,
+      toggleMute,
+      unlock,
+      playClick,
+      playSuccess,
+      playCelebration,
+      playError,
+      speak,
+    }),
+    [muted, toggleMute, unlock, playClick, playSuccess, playCelebration, playError, speak],
   )
 }
 
